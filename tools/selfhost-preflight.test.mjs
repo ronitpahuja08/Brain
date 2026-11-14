@@ -17,6 +17,12 @@ test('allows authenticated public API', () => {
 test('detects unsafe placeholders', () => {
   assert(inspectEnv('JWT_SECRET=changeme').some(x=>x.code==='PLACEHOLDER_SECRET'));
 });
+test('detects configured secrets that are too short without leaking values', () => {
+  const findings=inspectEnv('JWT_SECRET=jellyfish42\nACCESS_TOKEN=beetle8');
+  assert.equal(findings.filter(x=>x.code==='WEAK_SECRET').length, 2);
+  assert(!JSON.stringify(findings).includes('jellyfish42'));
+  assert(!JSON.stringify(findings).includes('beetle8'));
+});
 test('checks multi-user JWT', () => {
   assert(inspectEnv('AUTH_MODE=multi').some(x=>x.code==='MISSING_JWT_SECRET'));
 });

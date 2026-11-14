@@ -27,10 +27,13 @@ export function inspectEnv(text) {
   if (isNonLocalBind(env.API_HOST || '127.0.0.1') && !env.ACCESS_TOKEN && (env.AUTH_MODE || 'single') !== 'multi') {
     findings.push({ level:'critical', code:'PUBLIC_API_NO_AUTH', message:'Public API binding without access token or multi-user authentication' });
   }
-  for (const key of ['JWT_SECRET','DATABASE_URL','ACCESS_TOKEN']) {
+  const secretMinimumLengths = { JWT_SECRET:32, CREDENTIALS_KEY:32, ACCESS_TOKEN:16 };
+  for (const key of ['JWT_SECRET','DATABASE_URL','ACCESS_TOKEN','CREDENTIALS_KEY']) {
     const value=env[key];
     if (value && /^(change.?me|your.?secret|example|placeholder|default|123456)$/i.test(value)) {
       findings.push({ level:'high', code:'PLACEHOLDER_SECRET', message:key+' uses a recognizable placeholder' });
+    } else if (value && secretMinimumLengths[key] && value.length < secretMinimumLengths[key]) {
+      findings.push({ level:'high', code:'WEAK_SECRET', message:key+' is shorter than the recommended minimum length' });
     }
   }
   if ((env.AUTH_MODE || 'single') === 'multi' && !env.JWT_SECRET) {
