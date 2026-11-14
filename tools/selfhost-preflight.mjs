@@ -18,11 +18,13 @@ export function parseEnv(text) {
   }
   return env;
 }
+export function isNonLocalBind(host) {
+  return !['', '127.0.0.1', 'localhost', '::1', '[::1]'].includes((host || '').trim().toLowerCase());
+}
 export function inspectEnv(text) {
   const env = parseEnv(text);
   const findings = [];
-  const exposed = /^(0\.0\.0\.0|::|\[::\])$/;
-  if (exposed.test(env.API_HOST || '127.0.0.1') && !env.ACCESS_TOKEN && (env.AUTH_MODE || 'single') !== 'multi') {
+  if (isNonLocalBind(env.API_HOST || '127.0.0.1') && !env.ACCESS_TOKEN && (env.AUTH_MODE || 'single') !== 'multi') {
     findings.push({ level:'critical', code:'PUBLIC_API_NO_AUTH', message:'Public API binding without access token or multi-user authentication' });
   }
   for (const key of ['JWT_SECRET','DATABASE_URL','ACCESS_TOKEN']) {
