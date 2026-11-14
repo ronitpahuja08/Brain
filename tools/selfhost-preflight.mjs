@@ -5,7 +5,7 @@
  */
 import { readFileSync } from 'node:fs';
 
-export function inspectEnv(text) {
+export function parseEnv(text) {
   const env = {};
   for (const line of text.split(/\r?\n/)) {
     const trimmed = line.trim();
@@ -13,9 +13,13 @@ export function inspectEnv(text) {
     const split = trimmed.indexOf('=');
     if (split < 1) continue;
     const key = trimmed.slice(0, split).trim();
-    let value = trimmed.slice(split + 1).trim().replace(/^["']|["']$/g, '');
+    const value = trimmed.slice(split + 1).trim().replace(/^["']|["']$/g, '');
     env[key] = value;
   }
+  return env;
+}
+export function inspectEnv(text) {
+  const env = parseEnv(text);
   const findings = [];
   const exposed = /^(0\.0\.0\.0|::|\[::\])$/;
   if (exposed.test(env.API_HOST || '127.0.0.1') && !env.ACCESS_TOKEN && (env.AUTH_MODE || 'single') !== 'multi') {

@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { inspectEnv } from './selfhost-preflight.mjs';
+import { inspectEnv, parseEnv } from './selfhost-preflight.mjs';
+test('parses quoted values and ignores comment lines', () => {
+  assert.deepEqual(parseEnv('# comment\nAPI_HOST="0.0.0.0"\nACCESS_TOKEN=demo'), { API_HOST:'0.0.0.0', ACCESS_TOKEN:'demo' });
+});
 test('detects publicly bound unauthenticated API', () => {
   assert(inspectEnv('API_HOST=0.0.0.0\nAUTH_MODE=single').some(x=>x.code==='PUBLIC_API_NO_AUTH'));
 });
