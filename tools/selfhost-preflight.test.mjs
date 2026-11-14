@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { inspectComposePorts, inspectEnv, isNonLocalBind, parseEnv } from './selfhost-preflight.mjs';
+import { inspectComposePorts, inspectEnv, isNonLocalBind, parseEnv, sortFindings } from './selfhost-preflight.mjs';
 test('parses quoted values and ignores comment lines', () => {
   assert.deepEqual(parseEnv('# comment\nAPI_HOST="0.0.0.0"\nACCESS_TOKEN=demo'), { API_HOST:'0.0.0.0', ACCESS_TOKEN:'demo' });
 });
@@ -56,6 +56,10 @@ test('CLI combines private environment and Compose preflight findings', () => {
   } finally {
     rmSync(directory, { recursive:true, force:true });
   }
+});
+test('sorts findings by severity and then stable code', () => {
+  const sorted=sortFindings([{ level:'high', code:'Z' }, { level:'critical', code:'B' }, { level:'high', code:'A' }]);
+  assert.deepEqual(sorted.map(x=>x.code), ['B','A','Z']);
 });
 test('does not log or include secret values', () => {
   assert(!JSON.stringify(inspectEnv('ACCESS_TOKEN=supersecretvalue')).includes('supersecretvalue'));
