@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { inspectEnv, isNonLocalBind, parseEnv } from './selfhost-preflight.mjs';
+import { inspectComposePorts, inspectEnv, isNonLocalBind, parseEnv } from './selfhost-preflight.mjs';
 test('parses quoted values and ignores comment lines', () => {
   assert.deepEqual(parseEnv('# comment\nAPI_HOST="0.0.0.0"\nACCESS_TOKEN=demo'), { API_HOST:'0.0.0.0', ACCESS_TOKEN:'demo' });
 });
@@ -34,6 +34,10 @@ test('requires a credentials encryption key in production', () => {
   const findings=inspectEnv('NODE_ENV=production\nDATABASE_URL=postgres://local');
   assert(findings.some(x=>x.code==='MISSING_CREDENTIALS_KEY'));
   assert(!inspectEnv('NODE_ENV=production\nDATABASE_URL=postgres://local\nCREDENTIALS_KEY='+'x'.repeat(32)).some(x=>x.code==='MISSING_CREDENTIALS_KEY'));
+});
+test('flags compose ports that are not bound to loopback', () => {
+  assert.equal(inspectComposePorts('ports:\n  - "127.0.0.1:3000:3000"').length, 0);
+  assert.equal(inspectComposePorts('ports:\n  - "3000:3000"\n  - "0.0.0.0:3333:3333"').filter(x=>x.code==='PUBLIC_CONTAINER_PORT').length, 2);
 });
 test('does not log or include secret values', () => {
   assert(!JSON.stringify(inspectEnv('ACCESS_TOKEN=supersecretvalue')).includes('supersecretvalue'));

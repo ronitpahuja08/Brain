@@ -50,6 +50,18 @@ export function inspectEnv(text) {
   }
   return findings;
 }
+export function inspectComposePorts(text) {
+  const findings=[];
+  for (const line of text.split(/\r?\n/)) {
+    const match=line.match(/^\s*-\s*["']?([^"'#]+)["']?\s*(?:#.*)?$/);
+    if (!match) continue;
+    const binding=match[1].trim();
+    if (!/\d/.test(binding) || !binding.includes(':')) continue;
+    if (binding.startsWith('127.0.0.1:') || binding.startsWith('localhost:') || binding.startsWith('[::1]:')) continue;
+    findings.push({ level:'high', code:'PUBLIC_CONTAINER_PORT', message:'Container port is published without a loopback host binding' });
+  }
+  return findings;
+}
 if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).href) {
   const file=process.argv[2];
   if (!file) {
