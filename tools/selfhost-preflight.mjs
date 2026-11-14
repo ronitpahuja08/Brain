@@ -24,6 +24,9 @@ export function isNonLocalBind(host) {
 export function inspectEnv(text) {
   const env = parseEnv(text);
   const findings = [];
+  if (env.AUTH_MODE && !['single','multi'].includes(env.AUTH_MODE)) {
+    findings.push({ level:'high', code:'INVALID_AUTH_MODE', message:'AUTH_MODE must be single or multi' });
+  }
   if (isNonLocalBind(env.API_HOST || '127.0.0.1') && !env.ACCESS_TOKEN && (env.AUTH_MODE || 'single') !== 'multi') {
     findings.push({ level:'critical', code:'PUBLIC_API_NO_AUTH', message:'Public API binding without access token or multi-user authentication' });
   }
