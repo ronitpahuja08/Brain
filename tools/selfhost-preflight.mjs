@@ -39,6 +39,9 @@ export function inspectEnv(text) {
   if ((env.AUTH_MODE || 'single') === 'multi' && !env.JWT_SECRET) {
     findings.push({ level:'high', code:'MISSING_JWT_SECRET', message:'Multi-user mode requires a server-side JWT secret' });
   }
+  if ((env.CORS_ORIGINS || '').split(',').map(origin=>origin.trim()).includes('*')) {
+    findings.push({ level:'high', code:'WILDCARD_CORS', message:'CORS_ORIGINS permits every website; use explicit trusted origins' });
+  }
   if (env.NODE_ENV === 'production' && !env.DATABASE_URL) {
     findings.push({ level:'high', code:'MISSING_DATABASE_URL', message:'Production deployment requires a database URL' });
   }

@@ -26,6 +26,10 @@ test('detects configured secrets that are too short without leaking values', () 
 test('checks multi-user JWT', () => {
   assert(inspectEnv('AUTH_MODE=multi').some(x=>x.code==='MISSING_JWT_SECRET'));
 });
+test('flags wildcard CORS while allowing explicit local origins', () => {
+  assert(inspectEnv('CORS_ORIGINS=*').some(x=>x.code==='WILDCARD_CORS'));
+  assert(!inspectEnv('CORS_ORIGINS=http://localhost:3000,https://brain.example').some(x=>x.code==='WILDCARD_CORS'));
+});
 test('does not log or include secret values', () => {
   assert(!JSON.stringify(inspectEnv('ACCESS_TOKEN=supersecretvalue')).includes('supersecretvalue'));
 });
