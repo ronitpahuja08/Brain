@@ -63,13 +63,17 @@ export function inspectComposePorts(text) {
   return findings;
 }
 if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).href) {
-  const file=process.argv[2];
+  const [file, ...options]=process.argv.slice(2);
   if (!file) {
-    console.error('Usage: node tools/selfhost-preflight.mjs /path/to/private/.env');
+    console.error('Usage: node tools/selfhost-preflight.mjs /path/to/private/.env [--compose /path/to/docker-compose.yml]');
     process.exit(2);
   }
   try {
-    const findings=inspectEnv(readFileSync(file,'utf8'));
+    let findings=inspectEnv(readFileSync(file,'utf8'));
+    if (options.length) {
+      if (options.length !== 2 || options[0] !== '--compose') throw new Error('invalid options');
+      findings=findings.concat(inspectComposePorts(readFileSync(options[1],'utf8')));
+    }
     console.log(JSON.stringify({ result:findings.length ? 'review_required' : 'no_findings', findings },null,2));
     process.exitCode=findings.length ? 1 : 0;
   } catch {

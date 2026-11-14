@@ -1,5 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { inspectComposePorts, inspectEnv, isNonLocalBind, parseEnv } from './selfhost-preflight.mjs';
 test('parses quoted values and ignores comment lines', () => {
   assert.deepEqual(parseEnv('# comment\nAPI_HOST="0.0.0.0"\nACCESS_TOKEN=demo'), { API_HOST:'0.0.0.0', ACCESS_TOKEN:'demo' });
@@ -38,6 +42,20 @@ test('requires a credentials encryption key in production', () => {
 test('flags compose ports that are not bound to loopback', () => {
   assert.equal(inspectComposePorts('ports:\n  - "127.0.0.1:3000:3000"').length, 0);
   assert.equal(inspectComposePorts('ports:\n  - "3000:3000"\n  - "0.0.0.0:3333:3333"').filter(x=>x.code==='PUBLIC_CONTAINER_PORT').length, 2);
+});
+test('CLI combines private environment and Compose preflight findings', () => {
+  const directory=mkdtempSync(join(tmpdir(), 'companybrain-preflight-'));
+  try {
+    const envPath=join(directory, '.env');
+    const composePath=join(directory, 'compose.yml');
+    writeFileSync(envPath, 'API_HOST=127.0.0.1\n');
+    writeFileSync(composePath, 'ports:\n  - "3000:3000"\n');
+    const result=spawnSync(process.execPath, ['tools/selfhost-preflight.mjs', envPath, '--compose', composePath], { encoding:'utf8' });
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /PUBLIC_CONTAINER_PORT/);
+  } finally {
+    rmSync(directory, { recursive:true, force:true });
+  }
 });
 test('does not log or include secret values', () => {
   assert(!JSON.stringify(inspectEnv('ACCESS_TOKEN=supersecretvalue')).includes('supersecretvalue'));
