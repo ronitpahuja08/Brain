@@ -30,6 +30,11 @@ test('flags wildcard CORS while allowing explicit local origins', () => {
   assert(inspectEnv('CORS_ORIGINS=*').some(x=>x.code==='WILDCARD_CORS'));
   assert(!inspectEnv('CORS_ORIGINS=http://localhost:3000,https://brain.example').some(x=>x.code==='WILDCARD_CORS'));
 });
+test('requires a credentials encryption key in production', () => {
+  const findings=inspectEnv('NODE_ENV=production\nDATABASE_URL=postgres://local');
+  assert(findings.some(x=>x.code==='MISSING_CREDENTIALS_KEY'));
+  assert(!inspectEnv('NODE_ENV=production\nDATABASE_URL=postgres://local\nCREDENTIALS_KEY='+'x'.repeat(32)).some(x=>x.code==='MISSING_CREDENTIALS_KEY'));
+});
 test('does not log or include secret values', () => {
   assert(!JSON.stringify(inspectEnv('ACCESS_TOKEN=supersecretvalue')).includes('supersecretvalue'));
 });

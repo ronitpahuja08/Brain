@@ -45,6 +45,9 @@ export function inspectEnv(text) {
   if (env.NODE_ENV === 'production' && !env.DATABASE_URL) {
     findings.push({ level:'high', code:'MISSING_DATABASE_URL', message:'Production deployment requires a database URL' });
   }
+  if (env.NODE_ENV === 'production' && !env.CREDENTIALS_KEY) {
+    findings.push({ level:'high', code:'MISSING_CREDENTIALS_KEY', message:'Production deployment requires a credentials encryption key' });
+  }
   return findings;
 }
 if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).href) {
