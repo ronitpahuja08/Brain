@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { inspectComposePorts, inspectEnv, isNonLocalBind, parseEnv, sortFindings } from './selfhost-preflight.mjs';
+import { inspectComposePorts, inspectComposePrivileges, inspectEnv, isNonLocalBind, parseEnv, sortFindings } from './selfhost-preflight.mjs';
 test('parses quoted values and ignores comment lines', () => {
   assert.deepEqual(parseEnv('# comment\nAPI_HOST="0.0.0.0"\nACCESS_TOKEN=demo'), { API_HOST:'0.0.0.0', ACCESS_TOKEN:'demo' });
 });
@@ -46,6 +46,11 @@ test('requires a credentials encryption key in production', () => {
 test('flags compose ports that are not bound to loopback', () => {
   assert.equal(inspectComposePorts('ports:\n  - "127.0.0.1:3000:3000"').length, 0);
   assert.equal(inspectComposePorts('ports:\n  - "3000:3000"\n  - "0.0.0.0:3333:3333"').filter(x=>x.code==='PUBLIC_CONTAINER_PORT').length, 2);
+});
+test('flags privileged Compose services', () => {
+  const findings=inspectComposePrivileges('services:\n  worker:\n    privileged: true\n');
+  assert.equal(findings[0]?.code, 'PRIVILEGED_CONTAINER');
+  assert.equal(inspectComposePrivileges('privileged: false').length, 0);
 });
 test('CLI combines private environment and Compose preflight findings', () => {
   const directory=mkdtempSync(join(tmpdir(), 'companybrain-preflight-'));
