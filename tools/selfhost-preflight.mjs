@@ -45,6 +45,9 @@ export function inspectEnv(text) {
   if ((env.CORS_ORIGINS || '').split(',').map(origin=>origin.trim()).includes('*')) {
     findings.push({ level:'high', code:'WILDCARD_CORS', message:'CORS_ORIGINS permits every website; use explicit trusted origins' });
   }
+  if (env.NODE_ENV === 'production' && (env.CORS_ORIGINS || '').split(',').some(origin=>origin.trim().startsWith('http://') && !origin.trim().includes('localhost'))) {
+    findings.push({ level:'medium', code:'INSECURE_CORS_ORIGIN', message:'Production CORS origin uses HTTP; use HTTPS for non-local browser clients' });
+  }
   if (env.NODE_ENV === 'production' && !env.DATABASE_URL) {
     findings.push({ level:'high', code:'MISSING_DATABASE_URL', message:'Production deployment requires a database URL' });
   }
