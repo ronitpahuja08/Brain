@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { inspectComposeNetworkMode, inspectComposePorts, inspectComposePrivileges, inspectEnv, isNonLocalBind, parseEnv, sortFindings } from './selfhost-preflight.mjs';
+import { inspectComposeDockerSocketMounts, inspectComposeNetworkMode, inspectComposePorts, inspectComposePrivileges, inspectEnv, isNonLocalBind, parseEnv, sortFindings } from './selfhost-preflight.mjs';
 test('parses quoted values and ignores comment lines', () => {
   assert.deepEqual(parseEnv('# comment\nAPI_HOST="0.0.0.0"\nACCESS_TOKEN=demo'), { API_HOST:'0.0.0.0', ACCESS_TOKEN:'demo' });
 });
@@ -59,6 +59,10 @@ test('flags privileged Compose services', () => {
 test('flags Compose host networking', () => {
   assert.equal(inspectComposeNetworkMode('network_mode: host')[0]?.code, 'HOST_NETWORKING');
   assert.equal(inspectComposeNetworkMode('network_mode: bridge').length, 0);
+});
+test('flags Docker socket mounts in Compose', () => {
+  assert.equal(inspectComposeDockerSocketMounts('volumes:\n  - /var/run/docker.sock:/var/run/docker.sock')[0]?.code, 'DOCKER_SOCKET_MOUNT');
+  assert.equal(inspectComposeDockerSocketMounts('volumes:\n  - ./data:/data').length, 0);
 });
 test('CLI combines private environment and Compose preflight findings', () => {
   const directory=mkdtempSync(join(tmpdir(), 'companybrain-preflight-'));
