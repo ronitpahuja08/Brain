@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { inspectComposeDockerSocketMounts, inspectComposeHostIpcMode, inspectComposeHostPidMode, inspectComposeNetworkMode, inspectComposePorts, inspectComposePrivileges, inspectComposeRootUser, inspectComposeSysAdminCapability, inspectComposeUnconfinedSeccomp, inspectEnv, isNonLocalBind, parseEnv, sortFindings } from './selfhost-preflight.mjs';
+import { inspectComposeDisabledNoNewPrivileges, inspectComposeDockerSocketMounts, inspectComposeHostIpcMode, inspectComposeHostPidMode, inspectComposeNetworkMode, inspectComposePorts, inspectComposePrivileges, inspectComposeRootUser, inspectComposeSysAdminCapability, inspectComposeUnconfinedSeccomp, inspectEnv, isNonLocalBind, parseEnv, sortFindings } from './selfhost-preflight.mjs';
 test('parses quoted values and ignores comment lines', () => {
   assert.deepEqual(parseEnv('# comment\nAPI_HOST="0.0.0.0"\nACCESS_TOKEN=demo'), { API_HOST:'0.0.0.0', ACCESS_TOKEN:'demo' });
 });
@@ -83,6 +83,10 @@ test('flags the broad SYS_ADMIN capability inside cap_add blocks', () => {
 test('flags seccomp profiles that are explicitly disabled', () => {
   assert.equal(inspectComposeUnconfinedSeccomp('security_opt:\n  - seccomp:unconfined')[0]?.code, 'UNCONFINED_SECCOMP');
   assert.equal(inspectComposeUnconfinedSeccomp('security_opt:\n  - no-new-privileges:true').length, 0);
+});
+test('flags no-new-privileges settings that are explicitly disabled', () => {
+  assert.equal(inspectComposeDisabledNoNewPrivileges('security_opt:\n  - no-new-privileges:false')[0]?.code, 'NO_NEW_PRIVILEGES_DISABLED');
+  assert.equal(inspectComposeDisabledNoNewPrivileges('security_opt:\n  - no-new-privileges:true').length, 0);
 });
 test('CLI combines private environment and Compose preflight findings', () => {
   const directory=mkdtempSync(join(tmpdir(), 'companybrain-preflight-'));
