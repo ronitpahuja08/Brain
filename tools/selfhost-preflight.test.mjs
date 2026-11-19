@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { inspectComposeDockerSocketMounts, inspectComposeHostIpcMode, inspectComposeHostPidMode, inspectComposeNetworkMode, inspectComposePorts, inspectComposePrivileges, inspectEnv, isNonLocalBind, parseEnv, sortFindings } from './selfhost-preflight.mjs';
+import { inspectComposeDockerSocketMounts, inspectComposeHostIpcMode, inspectComposeHostPidMode, inspectComposeNetworkMode, inspectComposePorts, inspectComposePrivileges, inspectComposeRootUser, inspectEnv, isNonLocalBind, parseEnv, sortFindings } from './selfhost-preflight.mjs';
 test('parses quoted values and ignores comment lines', () => {
   assert.deepEqual(parseEnv('# comment\nAPI_HOST="0.0.0.0"\nACCESS_TOKEN=demo'), { API_HOST:'0.0.0.0', ACCESS_TOKEN:'demo' });
 });
@@ -71,6 +71,10 @@ test('flags Compose services that share the host PID namespace', () => {
 test('flags Compose services that share the host IPC namespace', () => {
   assert.equal(inspectComposeHostIpcMode('ipc: host')[0]?.code, 'HOST_IPC_NAMESPACE');
   assert.equal(inspectComposeHostIpcMode('ipc: private').length, 0);
+});
+test('flags Compose services explicitly configured to run as root', () => {
+  assert.equal(inspectComposeRootUser('user: "root"')[0]?.code, 'ROOT_CONTAINER_USER');
+  assert.equal(inspectComposeRootUser('user: 10001').length, 0);
 });
 test('CLI combines private environment and Compose preflight findings', () => {
   const directory=mkdtempSync(join(tmpdir(), 'companybrain-preflight-'));

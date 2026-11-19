@@ -113,6 +113,15 @@ export function inspectComposeHostIpcMode(text) {
   }
   return findings;
 }
+export function inspectComposeRootUser(text) {
+  const findings=[];
+  for (const line of text.split(/\r?\n/)) {
+    if (/^\s*user\s*:\s*["']?(?:root|0)["']?\s*(?:#.*)?$/i.test(line)) {
+      findings.push({ level:'medium', code:'ROOT_CONTAINER_USER', message:'Compose explicitly runs a service as root; use an unprivileged user when the workload permits it' });
+    }
+  }
+  return findings;
+}
 export function sortFindings(findings) {
   const priority={ critical:0, high:1, medium:2, low:3 };
   return [...findings].sort((left,right)=>(priority[left.level] ?? 9)-(priority[right.level] ?? 9) || left.code.localeCompare(right.code));
@@ -128,7 +137,7 @@ if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).
     if (options.length) {
       if (options.length !== 2 || options[0] !== '--compose') throw new Error('invalid options');
       const composeText=readFileSync(options[1],'utf8');
-      findings=findings.concat(inspectComposePorts(composeText), inspectComposePrivileges(composeText), inspectComposeNetworkMode(composeText), inspectComposeDockerSocketMounts(composeText), inspectComposeHostPidMode(composeText), inspectComposeHostIpcMode(composeText));
+      findings=findings.concat(inspectComposePorts(composeText), inspectComposePrivileges(composeText), inspectComposeNetworkMode(composeText), inspectComposeDockerSocketMounts(composeText), inspectComposeHostPidMode(composeText), inspectComposeHostIpcMode(composeText), inspectComposeRootUser(composeText));
     }
     findings=sortFindings(findings);
     console.log(JSON.stringify({ result:findings.length ? 'review_required' : 'no_findings', findings },null,2));
