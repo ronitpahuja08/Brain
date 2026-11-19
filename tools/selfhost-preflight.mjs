@@ -122,6 +122,19 @@ export function inspectComposeRootUser(text) {
   }
   return findings;
 }
+export function inspectComposeSysAdminCapability(text) {
+  const findings=[];
+  const lines=text.split(/\r?\n/);
+  let capabilityBlock=false;
+  for (const line of lines) {
+    if (/^\s*cap_add\s*:\s*(?:#.*)?$/i.test(line)) { capabilityBlock=true; continue; }
+    if (/^\s*[a-z][a-z_]*\s*:/i.test(line)) capabilityBlock=false;
+    if (capabilityBlock && /^\s*-\s*["']?SYS_ADMIN["']?\s*(?:#.*)?$/i.test(line)) {
+      findings.push({ level:'high', code:'SYS_ADMIN_CAPABILITY', message:'Compose adds SYS_ADMIN, a broad capability that can undermine container isolation' });
+    }
+  }
+  return findings;
+}
 export function sortFindings(findings) {
   const priority={ critical:0, high:1, medium:2, low:3 };
   return [...findings].sort((left,right)=>(priority[left.level] ?? 9)-(priority[right.level] ?? 9) || left.code.localeCompare(right.code));
@@ -137,7 +150,7 @@ if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).
     if (options.length) {
       if (options.length !== 2 || options[0] !== '--compose') throw new Error('invalid options');
       const composeText=readFileSync(options[1],'utf8');
-      findings=findings.concat(inspectComposePorts(composeText), inspectComposePrivileges(composeText), inspectComposeNetworkMode(composeText), inspectComposeDockerSocketMounts(composeText), inspectComposeHostPidMode(composeText), inspectComposeHostIpcMode(composeText), inspectComposeRootUser(composeText));
+      findings=findings.concat(inspectComposePorts(composeText), inspectComposePrivileges(composeText), inspectComposeNetworkMode(composeText), inspectComposeDockerSocketMounts(composeText), inspectComposeHostPidMode(composeText), inspectComposeHostIpcMode(composeText), inspectComposeRootUser(composeText), inspectComposeSysAdminCapability(composeText));
     }
     findings=sortFindings(findings);
     console.log(JSON.stringify({ result:findings.length ? 'review_required' : 'no_findings', findings },null,2));
